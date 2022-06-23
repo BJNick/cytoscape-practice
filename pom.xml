@@ -163,6 +163,11 @@
             <artifactId>work-api</artifactId>
             <version>${cytoscape.api.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.cytoscape</groupId>
+            <artifactId>session-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
 
         <!-- OSGi core API -->
         <dependency>

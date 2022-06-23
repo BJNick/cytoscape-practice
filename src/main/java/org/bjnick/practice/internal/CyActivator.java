@@ -3,6 +3,9 @@ package org.bjnick.practice.internal;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.service.util.AbstractCyActivator;
+import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.view.model.CyNetworkViewFactory;
+import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.work.TaskFactory;
 import org.osgi.framework.BundleContext;
 import static org.cytoscape.work.ServiceProperties.*;
@@ -34,8 +37,11 @@ public class CyActivator extends AbstractCyActivator {
 
         CyNetworkManager nm = getService(bc, CyNetworkManager.class);
         CyNetworkFactory nf = getService(bc, CyNetworkFactory.class);
+        CyNetworkViewFactory vf = getService(bc, CyNetworkViewFactory.class);
+        CyNetworkViewManager vm = getService(bc, CyNetworkViewManager.class);
+        CyNetworkNaming cnn = getService(bc, CyNetworkNaming.class);
 
-        registerService(bc, new MyTaskFactory(nf, nm),
+        registerService(bc, new MyTaskFactory(nf, nm, vf, vm, cnn),
                 TaskFactory.class, props);
         System.out.println("Practice App loaded! " + new Date());
     }
