@@ -2,6 +2,7 @@ package org.bjnick.practice.internal;
 
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
+import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.view.model.CyNetworkViewFactory;
@@ -60,6 +61,8 @@ public class CyActivator extends AbstractCyActivator {
         registerService(bc, new MyTaskFactory(cy),
                 TaskFactory.class, props);
         System.out.println("Practice App loaded! " + new Date());
+
+        registerService(bc, new OnSelect(cy), SelectedNodesAndEdgesListener.class);
     }
 
 }

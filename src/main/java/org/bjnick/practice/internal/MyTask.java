@@ -92,6 +92,7 @@ public class MyTask extends AbstractTask {
             myView.updateView();
 
 
+
         } catch (Exception e) {
             taskMonitor.showMessage(TaskMonitor.Level.ERROR, e.getLocalizedMessage());
         }
