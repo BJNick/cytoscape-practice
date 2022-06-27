@@ -5,12 +5,17 @@ import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.session.CyNetworkNaming;
+import org.cytoscape.task.NetworkViewTaskFactory;
+import org.cytoscape.view.layout.CyLayoutAlgorithm;
+import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
 import org.cytoscape.view.model.CyNetworkViewFactory;
 import org.cytoscape.view.model.CyNetworkViewManager;
 import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
 import org.cytoscape.view.vizmap.VisualMappingManager;
 import org.cytoscape.view.vizmap.VisualStyleFactory;
 import org.cytoscape.work.TaskFactory;
+import org.cytoscape.work.TunableSetter;
+import org.cytoscape.work.undo.UndoSupport;
 import org.osgi.framework.BundleContext;
 import static org.cytoscape.work.ServiceProperties.*;
 
@@ -46,6 +51,9 @@ public class CyActivator extends AbstractCyActivator {
         CyNetworkNaming cnn = getService(bc, CyNetworkNaming.class);
         VisualMappingManager vmm = getService(bc, VisualMappingManager.class);
         VisualStyleFactory vsf = getService(bc, VisualStyleFactory.class);
+        UndoSupport undoSupport = getService(bc, UndoSupport.class);
+		CyLayoutAlgorithmManager lam = getService(bc, CyLayoutAlgorithmManager.class);
+		TunableSetter ts = getService(bc, TunableSetter.class);
 
         VisualMappingFunctionFactory vmff_c = getService(bc, VisualMappingFunctionFactory.class,
                 "(mapping.type=continuous)");
@@ -56,13 +64,50 @@ public class CyActivator extends AbstractCyActivator {
         VisualMappingFunctionFactory vmff_p = getService(bc, VisualMappingFunctionFactory.class,
                 "(mapping.type=passthrough)");
 
-        CyAccess cy = new CyAccess(nf, nm, vf, vm, cnn, vmm, vsf, vmff_c, vmff_d, vmff_p);
+        CyAccess cy = new CyAccess(nf, nm, vf, vm, cnn, vmm, vsf, vmff_c, vmff_d, vmff_p, lam, ts);
 
         registerService(bc, new MyTaskFactory(cy),
                 TaskFactory.class, props);
-        System.out.println("Practice App loaded! " + new Date());
+
+        // ON SELECT EVENT
 
         registerService(bc, new OnSelect(cy), SelectedNodesAndEdgesListener.class);
+
+        // CUSTOM LAYOUT
+
+        /*
+        CustomLayout customLayout = new CustomLayout(undo);
+
+		Properties customLayoutProps = new Properties();
+		customLayoutProps.setProperty(PREFERRED_MENU, "Custom Layouts");
+		registerService(bc, customLayout, CyLayoutAlgorithm.class, customLayoutProps);
+
+		// ApplyCustomLayoutTaskFactory service
+		CyLayoutAlgorithmManager layoutManager = getService(bc, CyLayoutAlgorithmManager.class);
+		TunableSetter tunableSetter = getService(bc, TunableSetter.class);
+		ApplyCustomLayoutTaskFactory applyLayoutTaskFactory = new ApplyCustomLayoutTaskFactory(layoutManager, tunableSetter);
+
+		Properties applyCustomLayoutProperties = new Properties();
+		applyCustomLayoutProperties.setProperty(PREFERRED_MENU, "Apps.Samples");
+		applyCustomLayoutProperties.setProperty(TITLE, "Apply Custom Layout");
+		registerService(bc, applyLayoutTaskFactory, NetworkViewTaskFactory.class, applyCustomLayoutProperties);
+        */
+
+        Properties myLayoutProps = new Properties();
+		myLayoutProps.setProperty(PREFERRED_MENU, "Custom Layouts");
+
+        registerService(bc, new MyLayoutAlgorithm(undoSupport), CyLayoutAlgorithm.class, myLayoutProps);
+
+		ApplyMyLayoutTaskFactory applyLayoutTaskFactory = new ApplyMyLayoutTaskFactory(lam, ts);
+
+        Properties applyCustomLayoutProperties = new Properties();
+		applyCustomLayoutProperties.setProperty(PREFERRED_MENU, "Apps");
+		applyCustomLayoutProperties.setProperty(TITLE, "Apply My Layout");
+        applyCustomLayoutProperties.setProperty(MENU_GRAVITY, "2.0");
+		registerService(bc, applyLayoutTaskFactory, NetworkViewTaskFactory.class, applyCustomLayoutProperties);
+
+
+        System.out.println("Practice App loaded! " + new Date());
     }
 
 }

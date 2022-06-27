@@ -1,6 +1,7 @@
 package org.bjnick.practice.internal;
 
 import org.cytoscape.model.*;
+import org.cytoscape.view.layout.CyLayoutAlgorithm;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.model.CyNetworkViewFactory;
 import org.cytoscape.view.model.CyNetworkViewManager;
@@ -44,10 +45,16 @@ public class MyTask extends AbstractTask {
         CyNode n1 = myNet.addNode();
         CyNode n2 = myNet.addNode();
         myNet.addEdge(n1, n2, true); // Directed
+        CyNode n3 = myNet.addNode();
+        myNet.addEdge(n3, n1, true); // Directed
+        CyNode n4 = myNet.addNode();
+        myNet.addEdge(n4, n3, true); // Directed
 
         // Check before access
         myNet.getRow(n1).set("name", "B");
         myNet.getRow(n2).set("name", "A");
+        myNet.getRow(n3).set("name", "C");
+        myNet.getRow(n4).set("name", "D");
 
         CyTable table = myNet.getDefaultNodeTable();
         if (table.getColumn("Hello") == null)
@@ -86,12 +93,11 @@ public class MyTask extends AbstractTask {
 
             mapping.putMapValue("A", new Color(0xF6E105));
             mapping.putMapValue("B", new Color(0x6E8BFF));
+            mapping.putMapValue("C", new Color(0xFF6595));
 
             style.addVisualMappingFunction(mapping);
 
             myView.updateView();
-
-
 
         } catch (Exception e) {
             taskMonitor.showMessage(TaskMonitor.Level.ERROR, e.getLocalizedMessage());
