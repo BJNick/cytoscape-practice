@@ -48,7 +48,7 @@ public class OnSelect implements SelectedNodesAndEdgesListener {
         for (CyNetworkView v : views) {
             if (v == null) continue;
             for (CyEdge e : event.getUnselectedEdges()) {
-                clearStyle(v.getEdgeView(e));
+                clearStyle(e, v);
             }
         }
     }
@@ -68,7 +68,7 @@ public class OnSelect implements SelectedNodesAndEdgesListener {
         if (depth == 0) return;
 
         for (CyEdge e : net.getAdjacentEdgeIterable(n, CyEdge.Type.INCOMING)) {
-            applyIncomingStyle(view.getEdgeView(e));
+            applyIncomingStyle(e, view);
             exploreIncomingEdges(e.getSource(), net, view, depth-1);
         }
     }
@@ -77,24 +77,35 @@ public class OnSelect implements SelectedNodesAndEdgesListener {
         if (depth == 0) return;
 
         for (CyEdge e : net.getAdjacentEdgeIterable(n, CyEdge.Type.OUTGOING)) {
-            applyOutgoingStyle(view.getEdgeView(e));
+            applyOutgoingStyle(e, view);
             exploreOutgoingEdges(e.getTarget(), net, view, depth-1);
         }
     }
 
-    protected void applyIncomingStyle(View<CyEdge> edgeView) {
+    protected void applyIncomingStyle(CyEdge edge, CyNetworkView view) {
+        View<CyEdge> edgeView = view.getEdgeView(edge);
         edgeView.setLockedValue(BasicVisualLexicon.EDGE_UNSELECTED_PAINT, Color.BLUE);
         edgeView.setLockedValue(BasicVisualLexicon.EDGE_TRANSPARENCY, 255);
+        View<CyNode> nodeView = view.getNodeView(edge.getSource());
+        nodeView.setLockedValue(BasicVisualLexicon.NODE_TRANSPARENCY, 255);
     }
 
-    protected void applyOutgoingStyle(View<CyEdge> edgeView) {
+    protected void applyOutgoingStyle(CyEdge edge, CyNetworkView view) {
+        View<CyEdge> edgeView = view.getEdgeView(edge);
         edgeView.setLockedValue(BasicVisualLexicon.EDGE_UNSELECTED_PAINT, Color.RED);
         edgeView.setLockedValue(BasicVisualLexicon.EDGE_TRANSPARENCY, 255);
+        View<CyNode> nodeView = view.getNodeView(edge.getTarget());
+        nodeView.setLockedValue(BasicVisualLexicon.NODE_TRANSPARENCY, 255);
     }
 
-    protected void clearStyle(View<CyEdge> edgeView) {
+    protected void clearStyle(CyEdge edge, CyNetworkView view) {
+        View<CyEdge> edgeView = view.getEdgeView(edge);
         edgeView.clearValueLock(BasicVisualLexicon.EDGE_UNSELECTED_PAINT);
         edgeView.clearValueLock(BasicVisualLexicon.EDGE_TRANSPARENCY);
+        View<CyNode> nodeView = view.getNodeView(edge.getSource());
+        nodeView.clearValueLock(BasicVisualLexicon.NODE_TRANSPARENCY);
+        nodeView = view.getNodeView(edge.getTarget());
+        nodeView.clearValueLock(BasicVisualLexicon.NODE_TRANSPARENCY);
     }
 
     @Override
