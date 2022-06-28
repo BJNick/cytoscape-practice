@@ -1,5 +1,6 @@
 package org.bjnick.practice.internal;
 
+import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
@@ -71,7 +72,16 @@ public class CyActivator extends AbstractCyActivator {
 
         // ON SELECT EVENT
 
-        registerService(bc, new OnSelect(cy), SelectedNodesAndEdgesListener.class);
+        final OnSelect onselect = new OnSelect(cy);
+        registerService(bc, onselect, SelectedNodesAndEdgesListener.class);
+
+        final DirectedEdgesAction toolbarAction = new DirectedEdgesAction(onselect);
+
+        registerService(bc, toolbarAction, CyAction.class, new Properties());
+
+        HopDistanceAction toolbarAction2 = new HopDistanceAction(onselect);
+
+        registerService(bc, toolbarAction2, CyAction.class, new Properties());
 
         // CUSTOM LAYOUT
 

@@ -173,6 +173,11 @@
             <artifactId>layout-api</artifactId>
             <version>${cytoscape.api.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.cytoscape</groupId>
+            <artifactId>swing-application-api</artifactId>
+            <version>${cytoscape.api.version}</version>
+        </dependency>
 
         <!-- OSGi core API -->
         <dependency>
