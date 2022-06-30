@@ -5,13 +5,18 @@ import org.cytoscape.model.CyNetwork;
 import org.cytoscape.model.CyNode;
 import org.cytoscape.model.events.SelectedNodesAndEdgesEvent;
 import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
+import org.cytoscape.model.subnetwork.CyRootNetwork;
+import org.cytoscape.view.layout.CyLayoutAlgorithm;
 import org.cytoscape.view.model.CyNetworkView;
 import org.cytoscape.view.model.View;
+import org.cytoscape.view.model.VisualProperty;
 import org.cytoscape.view.presentation.property.BasicVisualLexicon;
 import org.cytoscape.view.presentation.property.NodeShapeVisualProperty;
+import org.cytoscape.view.vizmap.VisualStyle;
+import org.cytoscape.work.TaskIterator;
 
 import java.awt.*;
-import java.util.Collection;
+import java.util.*;
 
 public class OnSelect implements SelectedNodesAndEdgesListener {
 
@@ -64,25 +69,39 @@ public class OnSelect implements SelectedNodesAndEdgesListener {
         }
     }
 
-    protected void exploreIncomingEdges(CyNode n, CyNetwork net, CyNetworkView view, int depth) {
+    protected void exploreIncomingEdges(CyNode n, CyNetwork net, CyNetworkView view, int depth, Collection<CyNode> nodes, Collection<CyEdge> edges) {
+        if (nodes != null) nodes.add(n);
         if (depth == 0) return;
 
         for (CyEdge e : net.getAdjacentEdgeIterable(n, CyEdge.Type.INCOMING)) {
-            applyIncomingStyle(e, view);
-            exploreIncomingEdges(e.getSource(), net, view, depth-1);
+            if (edges != null) edges.add(e);
+            if (view != null)
+                applyIncomingStyle(e, view);
+            exploreIncomingEdges(e.getSource(), net, view, depth-1, nodes, edges);
         }
     }
 
-    protected void exploreOutgoingEdges(CyNode n, CyNetwork net, CyNetworkView view, int depth) {
+    protected void exploreOutgoingEdges(CyNode n, CyNetwork net, CyNetworkView view, int depth, Collection<CyNode> nodes, Collection<CyEdge> edges) {
+        if (nodes != null) nodes.add(n);
         if (depth == 0) return;
 
         for (CyEdge e : net.getAdjacentEdgeIterable(n, CyEdge.Type.OUTGOING)) {
-            applyOutgoingStyle(e, view);
-            exploreOutgoingEdges(e.getTarget(), net, view, depth-1);
+            if (edges != null) edges.add(e);
+            if (view != null)
+                applyOutgoingStyle(e, view);
+            exploreOutgoingEdges(e.getTarget(), net, view, depth-1, nodes, edges);
         }
     }
 
-    protected void applyIncomingStyle(CyEdge edge, CyNetworkView view) {
+    protected void exploreIncomingEdges(CyNode n, CyNetwork net, CyNetworkView view, int depth) {
+        exploreIncomingEdges(n, net, view, depth, null, null);
+    }
+
+    protected void exploreOutgoingEdges(CyNode n, CyNetwork net, CyNetworkView view, int depth) {
+        exploreOutgoingEdges(n, net, view, depth, null, null);
+    }
+
+        protected void applyIncomingStyle(CyEdge edge, CyNetworkView view) {
         View<CyEdge> edgeView = view.getEdgeView(edge);
         edgeView.setLockedValue(BasicVisualLexicon.EDGE_UNSELECTED_PAINT, Color.BLUE);
         edgeView.setLockedValue(BasicVisualLexicon.EDGE_TRANSPARENCY, 255);
@@ -124,5 +143,81 @@ public class OnSelect implements SelectedNodesAndEdgesListener {
             applyHighlighting(lastEvent);
         else
             clearHighlighting(lastEvent);
+    }
+
+    public void selectionToNetwork() {
+        // TODO: Check if anything is selected, send user notifications
+
+        if (lastEvent == null) {
+            System.out.println("Last event is null");
+            return;
+        }
+
+        CyNetwork supernet = lastEvent.getNetwork();
+        CyRootNetwork root = cy.rnm.getRootNetwork(supernet);
+
+        ArrayList<CyNode> selectedNodes = new ArrayList<>();
+        ArrayList<CyEdge> selectedEdges = new ArrayList<>();
+
+        for (CyNode n : lastEvent.getSelectedNodes()) {
+            exploreIncomingEdges(n, supernet, null, desiredHopDistance, selectedNodes, selectedEdges);
+            exploreOutgoingEdges(n, supernet, null, desiredHopDistance, selectedNodes, selectedEdges);
+        }
+
+        CyNetwork net = root.addSubNetwork(selectedNodes, selectedEdges);
+
+        cy.nm.addNetwork(net);
+
+        CyNetworkView view = cy.vf.createNetworkView(net);
+        cy.vm.addNetworkView(view);
+
+        Collection<CyNetworkView> oldViewList = cy.vm.getNetworkViews(supernet);
+
+        if (!oldViewList.isEmpty()) {
+
+            CyNetworkView oldView = oldViewList.iterator().next();
+
+            VisualStyle style = cy.vmm.getVisualStyle(oldView);
+
+            cy.vmm.addVisualStyle(style);
+            cy.vmm.setVisualStyle(style, view);
+            style.apply(view);
+
+            // Copy node positions and zoom
+
+            for (CyNode n : selectedNodes) {
+                view.getNodeView(n).setVisualProperty(BasicVisualLexicon.NODE_X_LOCATION, oldView.getNodeView(n).getVisualProperty(BasicVisualLexicon.NODE_X_LOCATION));
+                view.getNodeView(n).setVisualProperty(BasicVisualLexicon.NODE_Y_LOCATION, oldView.getNodeView(n).getVisualProperty(BasicVisualLexicon.NODE_Y_LOCATION));
+            }
+
+            VisualProperty[] toCopy = new VisualProperty[] {
+                    BasicVisualLexicon.NETWORK_CENTER_X_LOCATION,
+                    BasicVisualLexicon.NETWORK_CENTER_Y_LOCATION,
+                    BasicVisualLexicon.NETWORK_HEIGHT,
+                    BasicVisualLexicon.NETWORK_WIDTH,
+                    BasicVisualLexicon.NETWORK_SCALE_FACTOR,
+                    BasicVisualLexicon.NETWORK_CENTER_Z_LOCATION,
+                    BasicVisualLexicon.NETWORK_SIZE};
+            for (VisualProperty vp : toCopy)
+                view.setVisualProperty(vp, oldView.getVisualProperty(vp));
+
+
+            for (CyNode n : lastEvent.getSelectedNodes()) {
+                exploreIncomingEdges(n, supernet, view, desiredHopDistance);
+                exploreOutgoingEdges(n, supernet, view, desiredHopDistance);
+            }
+        }
+
+
+        /*CyLayoutAlgorithm layout = cy.lam.getDefaultLayout();
+
+        Object context = layout.createLayoutContext();
+        String layoutAttribute = null;
+
+        TaskIterator layoutTasks = layout.createTaskIterator(view, context, CyLayoutAlgorithm.ALL_NODE_VIEWS, layoutAttribute);
+
+        cy.taskm.execute(layoutTasks);*/
+
+
     }
 }

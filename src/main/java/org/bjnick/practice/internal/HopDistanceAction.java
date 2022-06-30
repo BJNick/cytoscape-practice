@@ -12,7 +12,7 @@ public class HopDistanceAction extends AbstractCyAction {
     public int counter = 1;
 
     public HopDistanceAction(OnSelect onSelect) {
-        super("DirectedEdgeColor");
+        super("HopDistanceAction");
 
         this.onSelect = onSelect;
 

@@ -3,7 +3,10 @@ package org.bjnick.practice.internal;
 import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
+import org.cytoscape.model.CyNetworkTableManager;
+import org.cytoscape.model.CyTableManager;
 import org.cytoscape.model.events.SelectedNodesAndEdgesListener;
+import org.cytoscape.model.subnetwork.CyRootNetworkManager;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.session.CyNetworkNaming;
 import org.cytoscape.task.NetworkViewTaskFactory;
@@ -15,6 +18,7 @@ import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
 import org.cytoscape.view.vizmap.VisualMappingManager;
 import org.cytoscape.view.vizmap.VisualStyleFactory;
 import org.cytoscape.work.TaskFactory;
+import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TunableSetter;
 import org.cytoscape.work.undo.UndoSupport;
 import org.osgi.framework.BundleContext;
@@ -55,6 +59,10 @@ public class CyActivator extends AbstractCyActivator {
         UndoSupport undoSupport = getService(bc, UndoSupport.class);
 		CyLayoutAlgorithmManager lam = getService(bc, CyLayoutAlgorithmManager.class);
 		TunableSetter ts = getService(bc, TunableSetter.class);
+        CyNetworkTableManager ntm = getService(bc, CyNetworkTableManager.class);
+        CyTableManager tm = getService(bc, CyTableManager.class);
+        CyRootNetworkManager rnm = getService(bc, CyRootNetworkManager.class);
+        TaskManager taskm = getService(bc, TaskManager.class);
 
         VisualMappingFunctionFactory vmff_c = getService(bc, VisualMappingFunctionFactory.class,
                 "(mapping.type=continuous)");
@@ -65,7 +73,7 @@ public class CyActivator extends AbstractCyActivator {
         VisualMappingFunctionFactory vmff_p = getService(bc, VisualMappingFunctionFactory.class,
                 "(mapping.type=passthrough)");
 
-        CyAccess cy = new CyAccess(nf, nm, vf, vm, cnn, vmm, vsf, vmff_c, vmff_d, vmff_p, lam, ts);
+        CyAccess cy = new CyAccess(nf, nm, vf, vm, cnn, vmm, vsf, vmff_c, vmff_d, vmff_p, lam, ts, ntm, tm, rnm, taskm);
 
         registerService(bc, new MyTaskFactory(cy),
                 TaskFactory.class, props);
@@ -76,12 +84,13 @@ public class CyActivator extends AbstractCyActivator {
         registerService(bc, onselect, SelectedNodesAndEdgesListener.class);
 
         final DirectedEdgesAction toolbarAction = new DirectedEdgesAction(onselect);
-
         registerService(bc, toolbarAction, CyAction.class, new Properties());
 
-        HopDistanceAction toolbarAction2 = new HopDistanceAction(onselect);
-
+        final HopDistanceAction toolbarAction2 = new HopDistanceAction(onselect);
         registerService(bc, toolbarAction2, CyAction.class, new Properties());
+
+        final SelectionToNetwork toolbarAction3 = new SelectionToNetwork(onselect);
+        registerService(bc, toolbarAction3, CyAction.class, new Properties());
 
         // CUSTOM LAYOUT
 
